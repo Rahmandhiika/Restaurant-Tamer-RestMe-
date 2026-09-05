@@ -33,5 +33,17 @@ final class GameScene: SKScene {
             .store(in: &cancellables)
 
         feedingViewModel.start()
+
+        addChild(makeDispenser(imageNamed: "Plate", position: CGPoint(x: 100, y: 210)))
+        addChild(makeDispenser(imageNamed: "PlateBun", position: CGPoint(x: 295, y: 210)))
+        addChild(makeDispenser(imageNamed: "PlateIsian", position: CGPoint(x: 900, y: 210)))
+        addChild(makeDispenser(imageNamed: "PlateRawMeat", position: CGPoint(x: 1095, y: 210)))
+    }
+
+    private func makeDispenser(imageNamed name: String, position: CGPoint) -> SKSpriteNode {
+        let dispenser = SKSpriteNode(imageNamed: name)
+        dispenser.size = CGSize(width: 150, height: 150)
+        dispenser.position = position
+        return dispenser
     }
 }

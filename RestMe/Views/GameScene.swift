@@ -34,10 +34,10 @@ final class GameScene: SKScene {
 
         feedingViewModel.start()
 
-        addChild(makeDispenser(imageNamed: "Plate", position: CGPoint(x: 100, y: 210)))
-        addChild(makeDispenser(imageNamed: "PlateBun", position: CGPoint(x: 295, y: 210)))
-        addChild(makeDispenser(imageNamed: "PlateIsian", position: CGPoint(x: 900, y: 210)))
-        addChild(makeDispenser(imageNamed: "PlateRawMeat", position: CGPoint(x: 1095, y: 210)))
+        addChild(makeDispenser(imageNamed: "PlateBun", position: CGPoint(x: 100, y: 290)))
+        addChild(makeDispenser(imageNamed: "PlateRawMeat", position: CGPoint(x: 295, y: 290)))
+        addChild(makeDispenser(imageNamed: "PlateIsian", position: CGPoint(x: 100, y: 110)))
+        addChild(makeDispenser(imageNamed: "Plate", position: CGPoint(x: 295, y: 110)))
     }
 
     private func makeDispenser(imageNamed name: String, position: CGPoint) -> SKSpriteNode {

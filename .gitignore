@@ -17,3 +17,6 @@ DerivedData/
 
 # Docs — sengaja local-only, nggak dipush ke GitHub
 docs/
+
+# Claude Code — local only
+CLAUDE.md

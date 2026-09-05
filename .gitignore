@@ -20,3 +20,4 @@ docs/
 
 # Claude Code — local only
 CLAUDE.md
+build/

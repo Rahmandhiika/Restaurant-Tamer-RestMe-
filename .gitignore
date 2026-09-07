@@ -15,9 +15,7 @@ DerivedData/
 # Editor
 .vscode/
 
-# Docs — sengaja local-only, nggak dipush ke GitHub
+# Docs — dipindah ke Kehidupan Dika (private vault), path di .agent/STATE.md
 docs/
 
-# Claude Code — local only
-CLAUDE.md
 build/

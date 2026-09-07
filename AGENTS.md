@@ -24,24 +24,9 @@ pilihan/inventory antar banyak jenis bahan (tetap 1 resep fixed, cuma dirakit 4 
 
 Kalau kepikiran "enaknya nambah X" — cek dulu ke daftar di atas / Bagian 5 PRD. Kalau X ada di situ, itu sengaja belum, bukan lupa.
 
-## Arsitektur — MVVM, wajib
+## Arsitektur
 
-```
-RestMe/
-├── Models/       — data & pure logic: GameConfig, enum Grade/FeedingState, kalkulasi grading
-├── ViewModels/   — state machine & game logic (timer, dispenser, assembly, minigame flow).
-│                   TIDAK import SpriteKit, tidak pegang SKNode — cuma expose state & keputusan.
-└── Views/        — SwiftUI shell (ContentView + SpriteView) & SpriteKit scene/node
-                    (GameScene, CreatureNode, dispenser/Pan/Trash/Piring node).
-                    Cuma render & forward input ke ViewModel, tanpa logic keputusan di dalamnya.
-```
-
-- **Shell aplikasi:** SwiftUI (`RestMeApp.swift` → `ContentView`). `ContentView` nampung `SpriteView(scene:)` yang isinya `GameScene` — SpriteKit tetap yang pegang scene/node/drag-logic, SwiftUI cuma wadahnya.
-- **Model** = data murni, nggak tau apa-apa soal View/ViewModel.
-- **ViewModel** = otak (state, timer, keputusan grade, tracking komponen assembly), nggak boleh `import SpriteKit`.
-- **View** = SwiftUI + SpriteKit node/scene, cuma nampilin state dari ViewModel & terusin touch/drag event — nggak boleh ada keputusan logic di file `Views/`.
-
-Ini yang direpresentasikan ke fokus "Game Logic and State" di PRD — pemisahan ViewModel dari View HARUS kelihatan jelas, bukan campur dalam satu file.
+MVVM (Models/ViewModels/Views), wajib dipatuhi. Detail lengkap (diagram folder, tanggung jawab tiap layer) dipindah ke `ARCHITECTURE.md` privat (path di `.agent/STATE.md`), 2026-09-07 — baca itu sebelum nulis kode baru, terutama soal batas ViewModel/View (nggak boleh campur logic keputusan ke `Views/`, ViewModel nggak boleh `import SpriteKit`).
 
 ## Kode & komentar
 

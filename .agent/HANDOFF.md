@@ -1,10 +1,10 @@
 # Handoff
 ## Date
-2026-09-06
+2026-09-08
 ## From
 Codex
 ## Objective
-Implement the feeding-loop vertical slice per docs/PRD.md, one thin slice at a time (incremental-implementation discipline), verifying each in the iOS Simulator before moving on. Working through the 8-slice plan agreed with the developer.
+Finish manual iPad verification of the committed one-lane feeding loop after the cooking-state and creature-lifecycle correction.
 ## Context & constraints
 - MVVM is enforced: `ViewModels/` must never `import SpriteKit` or hold an `SKNode` — only expose state/decisions. `Views/` only renders and forwards input, no decision logic. See root `CLAUDE.md` / `AGENTS.md`.
 - Dev/testing parameter values live in `Models/GameConfig.swift` (seconds, not the final minutes — see PRD §6 table for final values before demo).
@@ -16,7 +16,11 @@ Implement the feeding-loop vertical slice per docs/PRD.md, one thin slice at a t
 - Building `xcodebuild` with `-derivedDataPath` pointed inside the iCloud-synced project folder fails codesign (`resource fork, Finder information... not allowed`) — iCloud stamps xattrs that codesign rejects. Always build to a path outside iCloud sync, e.g. `-derivedDataPath /tmp/RestMe-build`.
 
 ## What was done
-- **Slice 4** (uncommitted): added `Ingredient`, drag-to-copy from each dispenser, invalid-drop deletion, and the ViewModel plate-first rule. The developer's layout edits are preserved.
+- Imported `BunIsian`, `BunDoneMeat`, and `DoneMeatIsian` imagesets from the developer's exported PNGs. All are 512×512 RGBA and the iOS asset build passed.
+- Recorded the mid-review design revision: assembly inputs become taps, cooking will demonstrate SpriteKit touch/update, and only the completed plate plus burger remains draggable.
+- **Mid-review revision** (committed): replaced ingredient drag-to-serve with `FeedingViewModel.tap(_:)` plate-first assembly. `AssemblyVisual` maps all seven food states to a single sprite above the separate `Plate`; `GameScene.update(_:)` advances Pan cooking. RawMeat changes to DoneMeat at the green-zone entry and only then can be tapped into the plate. At 100%, it becomes BurnMeat that must be dragged to Trash. A filled dish can be dragged to Trash, and the `Plate` + `BurgerV2` parent node can be dragged to the creature. The developer's layout edits are preserved.
+- **Creature lifecycle correction** (committed): `FeedingState` now represents cooldown, appearance, waiting, hungry, and celebration. `GameScene` renders initial appearance at 3 seconds, then `Emotion4` + `BubbleChat` Burger order 1 second after appearance begins, and short `Emotion2` happy response before fade-out/cooldown. No new creatures or FIFO lanes were added.
+- **Pan rendering correction** (committed): `GameScene` previously re-read `@Published` properties from Combine sinks, which displayed the old value because `@Published` emits in `willSet`. Each sink now passes its emitted value into the renderer. DoneMeat therefore hides immediately after transfer, and BurnMeat shows immediately at 100%. Patty offset is `(-8, -4)` with 175pt node size. Food calibration is BunIsian +12pt, BunDoneMeat +20pt, BurgerV2 +18pt; Bubble Burger is 120pt.
 - **Slice 1** (commit `067e235`): `GameConfig`/`Grade` models, `GameScene` renders `FullBackground` + `CreatureNode` (fades in), `ContentView` moved into `Views/` and embeds `SpriteView`. Locked iPhone/iPad orientation to landscape-only.
 - **Slice 2** (commit `e53254e`): `FeedingState` enum, `FeedingViewModel` (ObservableObject, no SpriteKit import) schedules `.hungry` after `initialHungerDelay + random(hungerRandomWindow)`. `GameScene` subscribes via Combine and shows `Emotion4` above the creature when hungry.
 - **Slice 3** (commit `245487b`, fixed in `5362c0c`): 4 static dispenser sprites (Plate/PlateBun/PlateIsian/PlateRawMeat) rendered as a 2x2 grid on the left kitchen counter, matching the hi-fi mockup — not draggable yet. (First attempt split them 2-and-2 flanking the stove; developer caught this from a reference screenshot and it was corrected same session.)
@@ -25,19 +29,22 @@ Implement the feeding-loop vertical slice per docs/PRD.md, one thin slice at a t
 
 ## Evidence / tests
 - No XCTest target in the project — verification has been build (`xcodebuild ... -derivedDataPath /tmp/RestMe-build`) + launch on iPad Pro 11-inch (M5) simulator + screenshot, for each slice, checked against docs/PRD.md acceptance criteria and the hi-fi mockup reference the developer shared inline.
-- The uncommitted layout tweak (creature/hunger-indicator/dispenser positions) was run and visually confirmed by the developer per Codex's prior `DECISIONS.md` D-002 — not re-verified by Claude Code this session.
-- `RestMeTests/FeedingViewModelAssemblySpec.swift` first failed because the slice API did not exist, then passed after implementation. A local iOS build also passed; UI automation could not capture the Simulator interaction because it timed out.
+- The uncommitted layout tweak (creature/hunger-indicator/dispenser positions) was run and visually confirmed by the developer per Codex's prior `DECISIONS.md` D-002. MCP Figma inspection then set the single plate slot to `(910, 285)` and retained the developer-set Pan at `(518, 320)`; the iOS build passed.
+- `RestMeTests/FeedingViewModelAssemblySpec.swift` first failed for the new food offsets and deterministic spawn parameters, then passed after implementation. It also covers plate-first rejection, all seven food visuals, green-zone gating before DoneMeat transfer, BurnMeat discard/retry, filled-plate discard, and serving reset. `xcodebuild` for the iOS Simulator also passes. UI automation could not capture the Simulator interaction because it timed out.
 
 ## Decisions
-See `.agent/DECISIONS.md` D-001, D-002 (both from the prior Codex session). No new decisions logged this session.
+See `.agent/DECISIONS.md` D-001 through D-012. D-008 is superseded by D-010.
 
 ## Files changed
 - Committed: `RestMe/Models/{GameConfig,Grade,FeedingState}.swift`, `RestMe/ViewModels/FeedingViewModel.swift`, `RestMe/Views/{ContentView,GameScene,CreatureNode}.swift`, `RestMe.xcodeproj/project.pbxproj` (orientation lock), `.gitignore` (added `build/`).
-- Uncommitted right now: the 6 files listed under "What was done" above (`git status` shows all as modified, nothing staged).
+- Committed: the developer's retained layout/header edits, revised tap/cooking source, `RestMeTests/FeedingViewModelAssemblySpec.swift`, and `RestMe/Assets.xcassets/{BunIsian,BunDoneMeat,DoneMeatIsian}.imageset`.
 
 ## Blockers
-None. Slice 4 is ready to start whenever the developer wants to resume — they explicitly paused to hand-edit the layout themselves before switching to Codex.
+Manual iPad verification is still needed. Do not reintroduce the superseded ingredient drag-to-serve flow, automatic expired-meat reset, or multi-lane flow. Figma frame `1:2` was inspected through MCP and shows four pans plus four plate slots; the developer confirmed the current slice intentionally uses only its upper-left Pan and plate slot.
 
 ## What to do next
-1. Run `RestMe` in Xcode, wait 4–14 seconds for the hunger indicator, then verify: bun dropped on the right counter before plate disappears; plate dropped there remains; bun dropped afterward remains.
-2. After visual acceptance, mark Slice 4 done and decide whether to commit the developer's layout edits together with Slice 4.
+1. At 3 seconds, verify the creature begins fading in; 1 second later, verify hungry `Emotion4` and the larger Burger bubble appear.
+2. Tap plate, raw meat, and Pan before the green zone: plate must remain unchanged; after green-zone entry the Pan must show DoneMeat and tapping it must transfer it while immediately clearing the Pan.
+3. Let the next patty reach 100%: it must immediately display BurnMeat. Drag it once to the lower-right Trash, then confirm a new raw meat can start.
+4. Drag a filled plate to Trash and a full burger to the creature; verify the happy emotion, fade-out, cooldown, and next appearance.
+5. Adjust only any reported visual/touch issue, then rebuild before considering a commit.

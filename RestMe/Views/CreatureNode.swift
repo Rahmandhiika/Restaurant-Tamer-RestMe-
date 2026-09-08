@@ -1,3 +1,10 @@
+//
+//  CreatureNode.swift
+//  RestMe
+//
+//  Created by Rahmandhika Putra Purwdi Wicaksono on 05/09/26.
+//
+
 import SpriteKit
 
 final class CreatureNode: SKSpriteNode {
@@ -16,3 +23,5 @@ final class CreatureNode: SKSpriteNode {
         run(.fadeIn(withDuration: duration))
     }
 }
+
+

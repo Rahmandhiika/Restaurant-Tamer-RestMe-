@@ -28,11 +28,11 @@ final class GameScene: SKScene {
     private let panNode = SKSpriteNode(imageNamed: "Pan")
     private let cookingMeatNode = SKSpriteNode()
     private let trashCanNode = SKSpriteNode(imageNamed: "TrashCan")
-    private let progressTrack = SKSpriteNode(color: .darkGray, size: GameConfig.cookingProgressBarSize)
-    private let progressFill = SKSpriteNode(color: .yellow, size: GameConfig.cookingProgressBarSize)
+    private let cookingProgressBar = ProgressBarNode()
+    private let orderProgressBar = ProgressBarNode()
     private let greenZone = SKShapeNode(rectOf: CGSize(
-        width: GameConfig.cookingProgressBarSize.width * GameConfig.greenZoneWidth,
-        height: GameConfig.cookingProgressBarSize.height
+        width: GameConfig.progressBarVisibleSize.width * GameConfig.greenZoneWidth,
+        height: GameConfig.progressBarVisibleSize.height
     ))
     private var isDraggingDish = false
     private var isDraggingBurnedMeat = false
@@ -52,7 +52,7 @@ final class GameScene: SKScene {
         addChild(creature)
 
         hungerIndicator = SKSpriteNode(imageNamed: "Emotion4")
-        hungerIndicator.size = CGSize(width: 48, height: 48)
+        hungerIndicator.size = CGSize(width: 38, height: 38)
         hungerIndicator.position = creature.position + GameConfig.emotionOffset
         hungerIndicator.isHidden = true
         addChild(hungerIndicator)
@@ -65,6 +65,13 @@ final class GameScene: SKScene {
 
         orderBurger.size = GameConfig.orderBurgerSize
         orderBubble.addChild(orderBurger)
+        orderBurger.position = CGPoint(x: 6, y: 6)
+
+        orderProgressBar.position = orderBubble.position + GameConfig.orderProgressBarOffset
+        orderProgressBar.setScale(GameConfig.orderProgressBarScale)
+        orderProgressBar.zPosition = 2
+        orderProgressBar.isHidden = true
+        addChild(orderProgressBar)
 
         setupServeDish()
         setupCookingArea()
@@ -108,32 +115,24 @@ final class GameScene: SKScene {
         cookingMeatNode.isHidden = true
         panNode.addChild(cookingMeatNode)
 
-        progressTrack.position = CGPoint(
+        cookingProgressBar.position = CGPoint(
             x: GameConfig.panPosition.x,
             y: GameConfig.panPosition.y + GameConfig.ingredientNodeSize.height / 2
         )
-        progressTrack.name = NodeName.pan
-        progressTrack.zPosition = 2
-        addChild(progressTrack)
+        cookingProgressBar.name = NodeName.pan
+        cookingProgressBar.zPosition = 2
+        addChild(cookingProgressBar)
 
-        progressFill.anchorPoint = CGPoint(x: 0, y: 0.5)
-        progressFill.position = CGPoint(
-            x: progressTrack.position.x - GameConfig.cookingProgressBarSize.width / 2,
-            y: progressTrack.position.y
-        )
-        progressFill.name = NodeName.pan
-        progressFill.zPosition = 3
-        addChild(progressFill)
-
-        greenZone.position = progressTrack.position
+        greenZone.position = cookingProgressBar.position + GameConfig.progressBarVisualOffset
         greenZone.name = NodeName.pan
         greenZone.fillColor = .clear
         greenZone.strokeColor = .green
-        greenZone.lineWidth = 2
-        greenZone.zPosition = 4
+        greenZone.lineWidth = 5
+        greenZone.zPosition = 3
         addChild(greenZone)
 
         setCookingProgressVisibility(false)
+        cookingProgressBar.setProgress(0)
         setCookingVisual(nil)
     }
 
@@ -175,6 +174,12 @@ final class GameScene: SKScene {
             }
             .store(in: &cancellables)
 
+        feedingViewModel.$orderProgress
+            .sink { [weak self] progress in
+                self?.orderProgressBar.setProgress(1 - progress)
+            }
+            .store(in: &cancellables)
+
     }
 
     private func makeDispenser(_ ingredient: Ingredient, imageNamed name: String, position: CGPoint) -> SKSpriteNode {
@@ -193,6 +198,7 @@ final class GameScene: SKScene {
         }
 
         feedingViewModel.advanceCooking(by: currentTime - lastUpdateTime)
+        feedingViewModel.advanceOrderTimer(by: currentTime - lastUpdateTime)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -307,13 +313,12 @@ final class GameScene: SKScene {
     }
 
     private func setCookingProgressVisibility(_ isCooking: Bool) {
-        progressTrack.isHidden = !isCooking
-        progressFill.isHidden = !isCooking
+        cookingProgressBar.isHidden = !isCooking
         greenZone.isHidden = !isCooking
     }
 
     private func setCookingProgress(_ progress: Double) {
-        progressFill.size.width = GameConfig.cookingProgressBarSize.width * progress
+        cookingProgressBar.setProgress(progress)
     }
 
     private func setCookingVisual(_ visual: CookingVisual?) {
@@ -397,6 +402,7 @@ final class GameScene: SKScene {
     private func render(_ state: FeedingState) {
         hungerIndicator.isHidden = state != .hungry && state != .celebrating
         orderBubble.isHidden = state != .hungry
+        orderProgressBar.isHidden = state != .hungry
 
         switch state {
         case .appearing:
@@ -410,6 +416,42 @@ final class GameScene: SKScene {
         case .waiting:
             break
         }
+    }
+}
+
+private final class ProgressBarNode: SKNode {
+    private let fillMask = SKSpriteNode(color: .white, size: .zero)
+    private let assetNodeSize = GameConfig.progressBarAssetNodeSize
+
+    override init() {
+        super.init()
+
+        let track = SKSpriteNode(imageNamed: "ProgressBarTrack")
+        track.size = assetNodeSize
+        addChild(track)
+
+        let fillCrop = SKCropNode()
+        fillCrop.zPosition = 1
+
+        let fill = SKSpriteNode(imageNamed: "ProgressBarFill")
+        fill.size = assetNodeSize
+        fillCrop.addChild(fill)
+
+        fillMask.anchorPoint = CGPoint(x: 0, y: 0.5)
+        fillMask.position = CGPoint(x: -assetNodeSize.width / 2, y: 0)
+        fillCrop.maskNode = fillMask
+        addChild(fillCrop)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setProgress(_ progress: Double) {
+        fillMask.size = CGSize(
+            width: assetNodeSize.width * max(0, min(progress, 1)),
+            height: assetNodeSize.height
+        )
     }
 }
 

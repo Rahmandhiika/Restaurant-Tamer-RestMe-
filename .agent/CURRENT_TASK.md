@@ -1,7 +1,7 @@
 # Current Task
 ## Task
-Mid-review revision — cooking-state and creature-lifecycle correction
+Close the remaining 10-Day acceptance gaps
 ## Objective
-Tap plate, bun, and isian dispensers to update one food sprite above the persistent plate; use SpriteKit touch/update for cooking; only collect DoneMeat after it reaches the green zone, drag BurnMeat to Trash, and show the creature's delayed hungry/order then post-serve happy lifecycle.
+Make the meat grade visible, vary creature feedback by grade, prevent pre-order dispenser input, then manually verify the bars and timeout result on iPad.
 ## Status
-implemented — plate-first tap assembly, combination-sprite swaps, and final burger drag are implemented. RawMeat becomes DoneMeat when it reaches the green zone; it cannot transfer before then, and it becomes BurnMeat at 100% until discarded in Trash. Pan rendering consumes Combine event values directly, fixing the stale DoneMeat sprite after transfer and at timeout. Filled-plate Trash detection uses the Trash frame so the dragged dish cannot cover the target. Visual calibration: patty `(-8, -4)`, BunIsian `+12pt`, BunDoneMeat `+20pt`, BurgerV2 `+18pt`, Bubble Burger `120pt`. The creature begins appearing at 3 seconds, then shows emotion/bubble 1 second later. The state spec and iOS build pass; manual iPad verification remains.
+planned — scope audit found the core loop complete but the PRD still lacks visible Perfect/Good/Low feedback, grade-specific creature reaction, a `.hungry` input gate, and a brief timeout result. The asset bars are implemented and build passes; retain the developer's existing tuning changes and do not expand beyond the one-lane slice.

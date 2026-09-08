@@ -9,6 +9,7 @@ enum FeedingViewModelAssemblySpec {
         verifyMeatOnlyTransfersAfterGreenZone()
         verifyExpiredMeatMustBeDiscarded()
         verifyFilledPlateCanBeDiscarded()
+        verifyOrderTimerExpires()
     }
 
     private static func verifyPlateFirst() {
@@ -63,9 +64,6 @@ enum FeedingViewModelAssemblySpec {
         precondition(AssemblyVisual.bunIsian.foodVerticalOffset == 12)
         precondition(AssemblyVisual.bunDoneMeat.foodVerticalOffset == 20)
         precondition(AssemblyVisual.burger.foodVerticalOffset == 18)
-        precondition(GameConfig.creatureSpawnDelay == 3)
-        precondition(GameConfig.initialHungerDelay == 1)
-        precondition(GameConfig.hungerRandomWindow == 0...0)
     }
 
     private static func verifyMeatOnlyTransfersAfterGreenZone() {
@@ -102,6 +100,18 @@ enum FeedingViewModelAssemblySpec {
         precondition(viewModel.discardAssembly())
         precondition(viewModel.assemblyVisual == nil)
         precondition(viewModel.tap(.plate))
+    }
+
+    private static func verifyOrderTimerExpires() {
+        let viewModel = FeedingViewModel()
+
+        viewModel.beginHunger()
+        viewModel.advanceOrderTimer(by: GameConfig.feedingCycleTimeout / 2)
+        precondition(viewModel.orderProgress == 0.5)
+
+        viewModel.advanceOrderTimer(by: GameConfig.feedingCycleTimeout / 2)
+        precondition(viewModel.orderProgress == 0)
+        precondition(viewModel.state == .cooldown)
     }
 
     private static func plated(_ ingredients: Ingredient...) -> FeedingViewModel {

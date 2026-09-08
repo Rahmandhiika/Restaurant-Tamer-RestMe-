@@ -15,23 +15,28 @@ enum GameConfig {
     static let panPosition = CGPoint(x: 518, y: 320)
     static let trashCanPosition = CGPoint(x: 1170, y: 40)
     static let cookingMeatNodeSize = CGSize(width: 175, height: 175)
-    static let cookingMeatOffset = CGPoint(x: -8, y: -4)
+    static let cookingMeatOffset = CGPoint(x: -10, y: -13)
     static let cookingProgressBarSize = CGSize(width: 120, height: 12)
+    static let progressBarAssetNodeSize = CGSize(width: 126, height: 154)
+    static let progressBarVisibleSize = CGSize(width: 120, height: 14.5)
+    static let progressBarVisualOffset = CGPoint(x: 0, y: -2.4)
+    static let orderProgressBarOffset = CGPoint(x: 0, y: 65)
+    static let orderProgressBarScale: CGFloat = 1.2
     static let bunIsianVerticalOffset = 12.0
     static let bunDoneMeatVerticalOffset = 20.0
     static let burgerVerticalOffset = 18.0
-    static let emotionOffset = CGPoint(x: 20, y: 110)
-    static let orderBubbleOffset = CGPoint(x: 175, y: 110)
+    static let emotionOffset = CGPoint(x: 20, y: 100)
+    static let orderBubbleOffset = CGPoint(x: 178, y: 50)
     static let orderBubbleSize = CGSize(width: 260, height: 180)
     static let orderBurgerSize = CGSize(width: 120, height: 120)
 
-    static let creatureSpawnDelay: TimeInterval = 3
-    static let creatureFadeDuration: TimeInterval = 0.6
-    static let happyEmotionDuration: TimeInterval = 0.8
-    static let initialHungerDelay: TimeInterval = 1
+    static let creatureSpawnDelay: TimeInterval = 1
+    static let creatureFadeDuration: TimeInterval = 0.4
+    static let happyEmotionDuration: TimeInterval = 1
+    static let initialHungerDelay: TimeInterval = 0.5
     static let hungerRandomWindow: ClosedRange<TimeInterval> = 0...0
     static let cooldownDuration: TimeInterval = 12
-    static let cookProgressDuration: TimeInterval = 8
+    static let cookProgressDuration: TimeInterval = 2
     static let greenZoneWidth: Double = 0.15
     static let feedingCycleTimeout: TimeInterval = 35
 }

@@ -70,3 +70,21 @@ Decision: Each cooking publisher sends its emitted progress, cooking flag, or vi
 Reason: `@Published` emits before its wrapped property stores the new value. Re-reading the ViewModel inside the subscriber displayed DoneMeat one transition late, leaving it visible after transfer and delaying BurnMeat until another interaction.
 Status: Accepted
 Date: 2026-09-08
+
+## D-013 — Progress bar uses separate track and fill assets
+Decision: Use `ProgressBarTrack` for the static gray bar and dynamically reveal `ProgressBarFill` from left to right for cooking progress. Keep the green-zone marker code-native.
+Reason: Separating static pixel art from changing progress preserves the rounded fill artwork while still communicating live cooking state.
+Status: Accepted
+Date: 2026-09-08
+
+## D-014 — Creature order bar counts down above the BubbleChat
+Decision: Reuse the track/fill asset pair above the Burger bubble while the creature is hungry. It starts full and shrinks to empty over `feedingCycleTimeout`; expiration clears the active food/cooking state and enters cooldown.
+Reason: The visible countdown communicates the order deadline using the same visual language as the cooking timing bar without adding another screen element.
+Status: Accepted
+Date: 2026-09-08
+
+## D-015 — Finish acceptance gaps before adding content
+Decision: The next implementation work is limited to visible meat grade feedback, grade-specific creature reaction, a `.hungry` gate for dispenser input, and a short timeout result before cooldown.
+Reason: These are the remaining PRD completion criteria. Inventory, multiple creature lanes, audio, and navigation do not strengthen this 10-Day vertical slice and remain out of scope.
+Status: Accepted
+Date: 2026-09-08

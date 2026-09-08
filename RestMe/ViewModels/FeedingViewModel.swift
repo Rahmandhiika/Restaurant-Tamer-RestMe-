@@ -14,6 +14,7 @@ final class FeedingViewModel: ObservableObject {
     @Published private(set) var cookingProgress = 0.0
     @Published private(set) var isCooking = false
     @Published private(set) var cookingVisual: CookingVisual?
+    @Published private(set) var orderProgress = 0.0
     private var placedIngredients = Set<Ingredient>()
 
     func start() {
@@ -25,11 +26,7 @@ final class FeedingViewModel: ObservableObject {
             return false
         }
 
-        placedIngredients.removeAll()
-        assemblyVisual = nil
-        cookingProgress = 0
-        isCooking = false
-        cookingVisual = nil
+        resetFood()
         state = .celebrating
 
         DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.happyEmotionDuration) { [weak self] in
@@ -59,7 +56,25 @@ final class FeedingViewModel: ObservableObject {
 
     private func scheduleHunger(after delay: TimeInterval) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            self?.state = .hungry
+            self?.beginHunger()
+        }
+    }
+
+    func beginHunger() {
+        orderProgress = 0
+        state = .hungry
+    }
+
+    func advanceOrderTimer(by elapsedTime: TimeInterval) {
+        guard state == .hungry, elapsedTime > 0 else {
+            return
+        }
+
+        orderProgress = min(orderProgress + elapsedTime / GameConfig.feedingCycleTimeout, 1)
+
+        if orderProgress == 1 {
+            resetFood()
+            scheduleAppearance(after: GameConfig.cooldownDuration)
         }
     }
 
@@ -145,6 +160,15 @@ final class FeedingViewModel: ObservableObject {
 
     private var greenZoneStart: Double {
         0.5 - GameConfig.greenZoneWidth / 2
+    }
+
+    private func resetFood() {
+        placedIngredients.removeAll()
+        assemblyVisual = nil
+        cookingProgress = 0
+        isCooking = false
+        cookingVisual = nil
+        orderProgress = 0
     }
 
     private func updateAssemblyVisual() {

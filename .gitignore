@@ -1,0 +1,16 @@
+# Xcode and local workspace state
+xcuserdata/
+**/xcuserdata/
+DerivedData/
+*.xcuserstate
+.build/
+
+# macOS and editor files
+.DS_Store
+.vscode/
+
+# Internal agent workflow files
+.agent/
+AGENTS.md
+CLAUDE.md
+buildServer.json

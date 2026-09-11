@@ -13,7 +13,6 @@ final class GameScene: SKScene {
         static let pan = "pan"
         static let trashCan = "trashCan"
         static let serveDish = "serveDish"
-        static let burnedMeat = "burnedMeat"
     }
 
     private let feedingViewModel = FeedingViewModel()
@@ -30,12 +29,15 @@ final class GameScene: SKScene {
     private let trashCanNode = SKSpriteNode(imageNamed: "TrashCan")
     private let cookingProgressBar = ProgressBarNode()
     private let orderProgressBar = ProgressBarNode()
-    private let greenZone = SKShapeNode(rectOf: CGSize(
-        width: GameConfig.progressBarVisibleSize.width * GameConfig.greenZoneWidth,
+    private let goodThreshold = SKShapeNode(rectOf: CGSize(
+        width: 4,
+        height: GameConfig.progressBarVisibleSize.height
+    ))
+    private let perfectZone = SKShapeNode(rectOf: CGSize(
+        width: GameConfig.progressBarVisibleSize.width * GameConfig.perfectZoneWidth,
         height: GameConfig.progressBarVisibleSize.height
     ))
     private var isDraggingDish = false
-    private var isDraggingBurnedMeat = false
     private var lastUpdateTime: TimeInterval = 0
 
     override func didMove(to view: SKView) {
@@ -51,7 +53,7 @@ final class GameScene: SKScene {
         creature.alpha = 0
         addChild(creature)
 
-        hungerIndicator = SKSpriteNode(imageNamed: "Emotion4")
+        hungerIndicator = SKSpriteNode()
         hungerIndicator.size = CGSize(width: 38, height: 38)
         hungerIndicator.position = creature.position + GameConfig.emotionOffset
         hungerIndicator.isHidden = true
@@ -68,7 +70,7 @@ final class GameScene: SKScene {
         orderBurger.position = CGPoint(x: 6, y: 6)
 
         orderProgressBar.position = orderBubble.position + GameConfig.orderProgressBarOffset
-        orderProgressBar.setScale(GameConfig.orderProgressBarScale)
+        orderProgressBar.xScale = GameConfig.orderProgressBarWidth / GameConfig.progressBarVisibleSize.width
         orderProgressBar.zPosition = 2
         orderProgressBar.isHidden = true
         addChild(orderProgressBar)
@@ -123,13 +125,29 @@ final class GameScene: SKScene {
         cookingProgressBar.zPosition = 2
         addChild(cookingProgressBar)
 
-        greenZone.position = cookingProgressBar.position + GameConfig.progressBarVisualOffset
-        greenZone.name = NodeName.pan
-        greenZone.fillColor = .clear
-        greenZone.strokeColor = .green
-        greenZone.lineWidth = 5
-        greenZone.zPosition = 3
-        addChild(greenZone)
+        let barOriginX = cookingProgressBar.position.x - GameConfig.progressBarVisibleSize.width / 2
+        let barY = cookingProgressBar.position.y + GameConfig.progressBarVisualOffset.y
+
+        goodThreshold.position = CGPoint(
+            x: barOriginX + GameConfig.progressBarVisibleSize.width * GameConfig.goodThreshold,
+            y: barY
+        )
+        goodThreshold.name = NodeName.pan
+        goodThreshold.fillColor = .white
+        goodThreshold.strokeColor = .clear
+        goodThreshold.zPosition = 3
+        addChild(goodThreshold)
+
+        perfectZone.position = CGPoint(
+            x: barOriginX + GameConfig.progressBarVisibleSize.width * (GameConfig.perfectZoneStart + GameConfig.perfectZoneWidth / 2),
+            y: barY
+        )
+        perfectZone.name = NodeName.pan
+        perfectZone.fillColor = .clear
+        perfectZone.strokeColor = .green
+        perfectZone.lineWidth = 4
+        perfectZone.zPosition = 3
+        addChild(perfectZone)
 
         setCookingProgressVisibility(false)
         cookingProgressBar.setProgress(0)
@@ -180,6 +198,12 @@ final class GameScene: SKScene {
             }
             .store(in: &cancellables)
 
+        feedingViewModel.$creatureEmotion
+            .sink { [weak self] emotion in
+                self?.setCreatureEmotion(emotion)
+            }
+            .store(in: &cancellables)
+
     }
 
     private func makeDispenser(_ ingredient: Ingredient, imageNamed name: String, position: CGPoint) -> SKSpriteNode {
@@ -208,12 +232,6 @@ final class GameScene: SKScene {
 
         let node = atPoint(touch.location(in: self))
 
-        if feedingViewModel.cookingVisual == .burned,
-           hasAncestor(named: NodeName.pan, from: node) {
-            beginBurnedMeatDrag(at: touch.location(in: self))
-            return
-        }
-
         if let ingredient = ingredient(at: node) {
             _ = feedingViewModel.tap(ingredient)
             return
@@ -239,18 +257,11 @@ final class GameScene: SKScene {
 
         if isDraggingDish {
             serveDish.position = touch.location(in: self)
-        } else if isDraggingBurnedMeat {
-            cookingMeatNode.position = touch.location(in: self)
         }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else {
-            return
-        }
-
-        if isDraggingBurnedMeat {
-            endBurnedMeatDrag(at: touch.location(in: self))
             return
         }
 
@@ -280,11 +291,6 @@ final class GameScene: SKScene {
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if isDraggingBurnedMeat {
-            isDraggingBurnedMeat = false
-            returnBurnedMeatToPan()
-        }
-
         if isDraggingDish {
             isDraggingDish = false
             serveDish.zPosition = 2
@@ -314,7 +320,8 @@ final class GameScene: SKScene {
 
     private func setCookingProgressVisibility(_ isCooking: Bool) {
         cookingProgressBar.isHidden = !isCooking
-        greenZone.isHidden = !isCooking
+        goodThreshold.isHidden = !isCooking
+        perfectZone.isHidden = !isCooking
     }
 
     private func setCookingProgress(_ progress: Double) {
@@ -330,10 +337,6 @@ final class GameScene: SKScene {
         case .done:
             cookingMeatNode.name = NodeName.pan
             cookingMeatNode.texture = SKTexture(imageNamed: "DoneMeat")
-            cookingMeatNode.isHidden = false
-        case .burned:
-            cookingMeatNode.name = NodeName.burnedMeat
-            cookingMeatNode.texture = SKTexture(imageNamed: "BurnMeat")
             cookingMeatNode.isHidden = false
         case nil:
             cookingMeatNode.isHidden = true
@@ -370,52 +373,38 @@ final class GameScene: SKScene {
         serveDish.run(.move(to: servingPosition, duration: 0.15))
     }
 
-    private func beginBurnedMeatDrag(at position: CGPoint) {
-        guard !isDraggingBurnedMeat else {
-            return
-        }
-
-        cookingMeatNode.removeFromParent()
-        cookingMeatNode.position = position
-        cookingMeatNode.zPosition = 10
-        addChild(cookingMeatNode)
-        isDraggingBurnedMeat = true
-    }
-
-    private func endBurnedMeatDrag(at position: CGPoint) {
-        isDraggingBurnedMeat = false
-
-        if trashCanNode.frame.contains(position) {
-            _ = feedingViewModel.discardBurnedMeat()
-        }
-
-        returnBurnedMeatToPan()
-    }
-
-    private func returnBurnedMeatToPan() {
-        cookingMeatNode.removeFromParent()
-        cookingMeatNode.position = GameConfig.cookingMeatOffset
-        cookingMeatNode.zPosition = 1
-        panNode.addChild(cookingMeatNode)
-    }
-
     private func render(_ state: FeedingState) {
-        hungerIndicator.isHidden = state != .hungry && state != .celebrating
+        hungerIndicator.isHidden = state != .hungry && state != .celebrating && state != .timedOut
         orderBubble.isHidden = state != .hungry
         orderProgressBar.isHidden = state != .hungry
 
         switch state {
         case .appearing:
             creature.fadeIn(duration: GameConfig.creatureFadeDuration)
-        case .celebrating:
-            hungerIndicator.texture = SKTexture(imageNamed: "Emotion2")
-        case .hungry:
-            hungerIndicator.texture = SKTexture(imageNamed: "Emotion4")
         case .cooldown:
             creature.run(.fadeOut(withDuration: GameConfig.creatureFadeDuration))
-        case .waiting:
+        case .waiting, .hungry, .celebrating, .timedOut:
             break
         }
+    }
+
+    private func setCreatureEmotion(_ emotion: CreatureEmotion?) {
+        let imageName: String?
+
+        switch emotion {
+        case .waitingForFood:
+            imageName = "Emotion3"
+        case .perfect:
+            imageName = "Emotion1"
+        case .good:
+            imageName = "Emotion2"
+        case .low:
+            imageName = "Emotion4"
+        case nil:
+            imageName = nil
+        }
+
+        hungerIndicator.texture = imageName.map(SKTexture.init(imageNamed:))
     }
 }
 

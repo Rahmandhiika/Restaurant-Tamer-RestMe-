@@ -16,7 +16,6 @@ enum Ingredient: String, Hashable {
 enum CookingVisual: Equatable {
     case raw
     case done
-    case burned
 }
 
 enum AssemblyVisual: Equatable {

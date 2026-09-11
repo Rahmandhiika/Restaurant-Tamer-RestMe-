@@ -11,16 +11,10 @@ enum Grade: Equatable {
     case low
 
     static func grade(for cookingProgress: Double) -> Grade {
-        let distanceFromGreenZone = abs(cookingProgress - 0.5)
-
-        if distanceFromGreenZone <= GameConfig.greenZoneWidth / 2 {
+        if cookingProgress >= GameConfig.perfectZoneStart {
             return .perfect
         }
 
-        if distanceFromGreenZone <= GameConfig.greenZoneWidth {
-            return .good
-        }
-
-        return .low
+        return .good
     }
 }

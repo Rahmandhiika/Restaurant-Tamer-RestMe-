@@ -10,5 +10,13 @@ enum FeedingState: Equatable {
     case waiting
     case hungry
     case celebrating
+    case timedOut
     case cooldown
+}
+
+enum CreatureEmotion: Equatable {
+    case waitingForFood
+    case perfect
+    case good
+    case low
 }

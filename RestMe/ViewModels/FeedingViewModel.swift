@@ -15,6 +15,8 @@ final class FeedingViewModel: ObservableObject {
     @Published private(set) var isCooking = false
     @Published private(set) var cookingVisual: CookingVisual?
     @Published private(set) var orderProgress = 0.0
+    @Published private(set) var meatGrade: Grade?
+    @Published private(set) var creatureEmotion: CreatureEmotion?
     private var placedIngredients = Set<Ingredient>()
 
     func start() {
@@ -22,11 +24,14 @@ final class FeedingViewModel: ObservableObject {
     }
 
     func serve() -> Bool {
-        guard assemblyVisual == .burger else {
+        guard state == .hungry,
+              assemblyVisual == .burger,
+              let meatGrade else {
             return false
         }
 
         resetFood()
+        creatureEmotion = emotion(for: meatGrade)
         state = .celebrating
 
         DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.happyEmotionDuration) { [weak self] in
@@ -37,6 +42,7 @@ final class FeedingViewModel: ObservableObject {
 
     private func scheduleAppearance(after delay: TimeInterval) {
         state = .cooldown
+        creatureEmotion = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self else {
                 return
@@ -62,6 +68,7 @@ final class FeedingViewModel: ObservableObject {
 
     func beginHunger() {
         orderProgress = 0
+        creatureEmotion = .waitingForFood
         state = .hungry
     }
 
@@ -74,11 +81,20 @@ final class FeedingViewModel: ObservableObject {
 
         if orderProgress == 1 {
             resetFood()
-            scheduleAppearance(after: GameConfig.cooldownDuration)
+            creatureEmotion = .low
+            state = .timedOut
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.timeoutEmotionDuration) { [weak self] in
+                self?.scheduleAppearance(after: GameConfig.cooldownDuration)
+            }
         }
     }
 
     func tap(_ ingredient: Ingredient) -> Bool {
+        guard state == .hungry else {
+            return false
+        }
+
         if ingredient == .rawMeat {
             return startCooking()
         }
@@ -105,8 +121,8 @@ final class FeedingViewModel: ObservableObject {
 
         if cookingProgress == 1 {
             isCooking = false
-            cookingVisual = .burned
-        } else if cookingProgress >= greenZoneStart {
+            addMeatToAssembly(grade: .low)
+        } else if cookingProgress >= GameConfig.goodThreshold {
             cookingVisual = .done
         }
     }
@@ -118,21 +134,8 @@ final class FeedingViewModel: ObservableObject {
 
         isCooking = false
         let grade = Grade.grade(for: cookingProgress)
-        cookingProgress = 0
-        cookingVisual = nil
-        placedIngredients.insert(.doneMeat)
-        updateAssemblyVisual()
+        addMeatToAssembly(grade: grade)
         return grade
-    }
-
-    func discardBurnedMeat() -> Bool {
-        guard cookingVisual == .burned else {
-            return false
-        }
-
-        cookingProgress = 0
-        cookingVisual = nil
-        return true
     }
 
     func discardAssembly() -> Bool {
@@ -142,6 +145,7 @@ final class FeedingViewModel: ObservableObject {
 
         placedIngredients.removeAll()
         self.assemblyVisual = nil
+        meatGrade = nil
         return true
     }
 
@@ -158,8 +162,12 @@ final class FeedingViewModel: ObservableObject {
         return true
     }
 
-    private var greenZoneStart: Double {
-        0.5 - GameConfig.greenZoneWidth / 2
+    private func addMeatToAssembly(grade: Grade) {
+        cookingProgress = 0
+        cookingVisual = nil
+        placedIngredients.insert(.doneMeat)
+        meatGrade = grade
+        updateAssemblyVisual()
     }
 
     private func resetFood() {
@@ -169,6 +177,18 @@ final class FeedingViewModel: ObservableObject {
         isCooking = false
         cookingVisual = nil
         orderProgress = 0
+        meatGrade = nil
+    }
+
+    private func emotion(for grade: Grade) -> CreatureEmotion {
+        switch grade {
+        case .perfect:
+            .perfect
+        case .good:
+            .good
+        case .low:
+            .low
+        }
     }
 
     private func updateAssemblyVisual() {

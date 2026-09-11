@@ -39,10 +39,10 @@ enum GameConfig {
     static let timeoutEmotionDuration: TimeInterval = 1
     static let initialHungerDelay: TimeInterval = 0.5
     static let hungerRandomWindow: ClosedRange<TimeInterval> = 0...0
-    static let cooldownDuration: TimeInterval = 12
-    static let cookProgressDuration: TimeInterval = 6
+    static let cooldownDuration: TimeInterval = 4
+    static let cookProgressDuration: TimeInterval = 1
     static let goodThreshold: Double = 0.5
     static let perfectZoneWidth: Double = 0.15
     static let perfectZoneStart = 1 - perfectZoneWidth
-    static let feedingCycleTimeout: TimeInterval = 35
+    static let feedingCycleTimeout: TimeInterval = 12
 }

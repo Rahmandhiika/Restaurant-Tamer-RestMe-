@@ -14,3 +14,6 @@ DerivedData/
 AGENTS.md
 CLAUDE.md
 buildServer.json
+
+# Generated marketing/demo media - keep out of git, archive in Kehidupan Dika vault instead
+output/
